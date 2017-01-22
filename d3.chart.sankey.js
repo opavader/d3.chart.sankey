@@ -439,7 +439,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    while (remainingNodes.length) {
 	      nextNodes = [];
 	      remainingNodes.forEach(function(node) {
-	        node.x = Math.max(2,x);
+	        node.x = Math.max(1,x);
 	        node.dx = nodeWidth;
 	        node.sourceLinks.forEach(function(link) {
 	          nextNodes.push(link.target);
