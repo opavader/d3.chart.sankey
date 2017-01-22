@@ -1,7 +1,7 @@
 /*!
- * d3.chart.sankey - v0.2.0
+ * d3.chart.sankey - v0.2.1
  * License: MIT
- * Date: 2016-00-25
+ * Date: 2016-06-05
  */
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
@@ -97,6 +97,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    chart.features.iterations = 32;
 	    chart.features.nodeWidth = chart.d3.sankey.nodeWidth();
 	    chart.features.nodePadding = chart.d3.sankey.nodePadding();
+	    chart.features.alignLabel = 'auto';
 
 	    chart.layers.links = chart.layers.base.append("g").classed("links", true);
 	    chart.layers.nodes = chart.layers.base.append("g").classed("nodes", true);
@@ -170,8 +171,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	          this.select("text")
 	            .text(chart.features.name)
 	            .attr("y", function(d) { return d.dy / 2; })
-	            .attr("x", function(d) { return hasTextLeft(d) ? (6 + chart.features.nodeWidth) : -6; })
-	            .attr("text-anchor", function(d) { return hasTextLeft(d) ? "start" : "end"; });
+	            .attr("x", function(d) { return textAnchor(d) === 'start' ? (6 + chart.features.nodeWidth) : -6; })
+	            .attr("text-anchor", textAnchor);
 	        },
 
 	        "exit": function() {
@@ -180,8 +181,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    });
 
-	    function hasTextLeft(node) {
-	      return node.x < chart.features.width / 2;
+	    function textAnchor(node) {
+	      var align = chart.features.alignLabel;
+	      if (typeof(align) === 'function') {
+	        align = align(node);
+	      }
+	      if (align === 'auto') {
+	        align = node.x < chart.features.width / 2 ? 'start' : 'end';
+	      }
+	      return align;
 	    }
 
 	    function colorNodes(node) {
@@ -258,6 +266,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	  spread: function(_) {
 	    if (!arguments.length) { return this.features.spread; }
 	    this.features.spread = _;
+
+	    if (this.data) { this.draw(this.data); }
+
+	    return this;
+	  },
+
+
+
+	  alignLabel: function(_) {
+	    if (!arguments.length) { return this.features.alignLabel; }
+	    this.features.alignLabel = _;
 
 	    if (this.data) { this.draw(this.data); }
 
@@ -401,10 +420,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  // Compute the value (size) of each node by summing the associated links.
 	  function computeNodeValues() {
 	    nodes.forEach(function(node) {
-	      node.value = Math.max(
+	      node.value = Math.max(1,
 	        d3.sum(node.sourceLinks, value),
-	        d3.sum(node.targetLinks, value),
-              1,
+	        d3.sum(node.targetLinks, value)
 	      );
 	    });
 	  }
@@ -421,7 +439,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    while (remainingNodes.length) {
 	      nextNodes = [];
 	      remainingNodes.forEach(function(node) {
-	        node.x = x;
+	        node.x = Math.max(2,x);
 	        node.dx = nodeWidth;
 	        node.sourceLinks.forEach(function(link) {
 	          nextNodes.push(link.target);
@@ -433,7 +451,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    //
 	    moveSinksRight(x);
-	    scaleNodeBreadths((size[0] - nodeWidth) / (x - 1));
+	    scaleNodeBreadths((size[0] - nodeWidth) / Math.max(1,(x - 1)));
 	  }
 
 	  function moveSourcesRight() {
@@ -441,6 +459,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      if (!node.targetLinks.length) {
 	        node.x = d3.min(node.sourceLinks, function(d) { return d.target.x; }) - 1;
 	      }
+
 	    });
 	  }
 
